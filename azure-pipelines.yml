@@ -41,6 +41,10 @@ steps:
   inputs:
     summaryFileLocation: 'coverage.xml'
 
+- script: |
+    mkdir -p $(Build.ArtifactStagingDirectory)/htmlcov
+    cp -r htmlcov/* $(Build.ArtifactStagingDirectory)/htmlcov/
+  displayName: 'Copy HTML coverage to artifact staging'
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish HTML coverage artifact'
