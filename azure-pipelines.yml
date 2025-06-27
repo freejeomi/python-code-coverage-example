@@ -14,32 +14,37 @@ strategy:
       python.version: '3.12'
 
 steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-    displayName: 'Use Python $(python.version)'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
 
-  - script: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-    displayName: 'Install dependencies'
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
 
-  - task: ArchiveFiles@2
-    displayName: 'Archive files'
-    inputs:
-      rootFolderOrFile: $(System.DefaultWorkingDirectory)
-      includeRootFolder: false
-      archiveType: zip
-      archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId)-$(python.version).zip
-      replaceExistingArchive: true
+- script: |
+    pip install pytest pytest-cov pytest-azurepipelines
+    pytest --cov=. --cov-report=xml --cov-report=cobertura --cov-report=html --junitxml=pytest-results.xml
+  displayName: 'Run tests with coverage'
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
+- task: PublishTestResults@2
+  displayName: 'Publish test results'
+  inputs:
+    testResultsFiles: '**/pytest-results.xml'
+    testResultsFormat: 'JUnit'
+    failTaskOnFailedTests: true
 
-  - script: |
-      pip install pytest pytest-azurepipelines
-      pytest
-    displayName: 'pytest'
+- task: PublishCodeCoverageResults@2
+  displayName: 'Publish code coverage to Azure DevOps'
+  inputs:
+    summaryFileLocation: 'coverage.xml'
+
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish HTML coverage artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/htmlcov'
+    ArtifactName: 'CoverageReport'
+    publishLocation: 'Container'
